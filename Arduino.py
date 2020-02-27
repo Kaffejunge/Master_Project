@@ -1,43 +1,48 @@
 # list all comports from terminal
 # python -m serial.tools.list_ports
 
-from pyfirmata import Arduino, util
+from pyfirmata import Arduino, ArduinoMega, util, pyfirmata
 import time
 
+# !After importing this module, give a short wait befor asking for a value!
 
-class _Arduino(Arduino):
+
+class _Arduino(ArduinoMega, Arduino):
 
     SS1_dict = {'waste': [1, 1, 1], 'aq': [1, 1, 0], 'org': [
         1, 0, 1], 'rct': [1, 0, 0], 'phase': [0, 1, 1]}
 
     SS2_dict = {'sm1': [0, 1, 0, 1, 1, 1], 'sm2': [0, 1, 0, 1, 1, 0], 'sm3': [0, 1, 0,
-                                                                              1, 0, 1], 'sm4': [0, 1, 0, 1, 0, 0], 'naoh': [0, 1, 0, 1, 0, 0], 'hcl': [0, 1, 0, 1, 0, 1]}
+                                                                              1, 0, 1], 'sm4': [0, 1, 0, 1, 0, 0], 'naoh': [0, 1, 0, 0, 1, 1], 'hcl': [0, 1, 0, 0, 1, 0]}
 
     solvent_dict = {'acetone': [1, 0, 0, 0], 'h2o': [
         0, 1, 0, 0], 'rct_slv': [0, 0, 1, 0], 'wash_slv': [0, 0, 0, 1]}
 
-    def __init__(self, com_port):
+    def __init__(self, com_port, board_type='mega'):
+        if(board_type == 'mega'):
+            self.board = ArduinoMega(com_port)
 
-        self.board = Arduino(com_port)
-        self.com_port = com_port
+            # get_pin(a=analog / d=digital, <pin number>, i=input / o=output / p=pmw
+            self.pin_list = []
+            self.pin_list.append(self.board.get_pin('d:4:o'))
+            self.pin_list.append(self.board.get_pin('d:3:o'))
+            self.pin_list.append(self.board.get_pin('d:2:o'))
+            self.pin_list.append(self.board.get_pin('d:7:o'))
+            self.pin_list.append(self.board.get_pin('d:6:o'))
+            self.pin_list.append(self.board.get_pin('d:5:o'))
 
-        # get_pin(a=analog / d=digital, <pin number>, i=input / o=output / p=pmw)
+            self.slv_pin_list = []
+            self.slv_pin_list.append(self.board.get_pin('d:37:o'))
+            self.slv_pin_list.append(self.board.get_pin('d:38:o'))
+            self.slv_pin_list.append(self.board.get_pin('d:41:o'))
+            self.slv_pin_list.append(self.board.get_pin('d:42:o'))
 
-        self.pin_list = []
-        self.pin_list.append(self.board.get_pin('d:2:o'))
-        self.pin_list.append(self.board.get_pin('d:3:o'))
-        self.pin_list.append(self.board.get_pin('d:4:o'))
-        self.pin_list.append(self.board.get_pin('d:5:o'))
-        self.pin_list.append(self.board.get_pin('d:6:o'))
-        self.pin_list.append(self.board.get_pin('d:7:o'))
+            for pin in self.pin_list:
+                pin.write(1)
+        else:
+            self.board = Arduino(com_port)
 
-        self.slv_pin_list = []
-        self.slv_pin_list.append(self.board.get_pin('d:8:o'))
-        self.slv_pin_list.append(self.board.get_pin('d:9:o'))
-        self.slv_pin_list.append(self.board.get_pin('d:10:o'))
-        self.slv_pin_list.append(self.board.get_pin('d:11:o'))
-
-        # self.pin_phase = self.board.get_pin('a::i')
+        self.pin_phase = self.board.get_pin('d:8:i')
         # self.pin_rotovap = self.board.get_pin('d::o')
 
         if(str(self.board) != 'None'):
@@ -75,13 +80,8 @@ class _Arduino(Arduino):
         self.board.analog[pin].write(val)
         print(f'Set pin{pin} to {val}')
 
-    def read_anal_pin(self):
-        val = self.pin_sampling.read()
-        print(val)
-
-    def read_digi_pin(self):
-        pass
-        # ! Do i need this?
+    def read_phase_pin(self):
+        return self.pin_phase.read()
 
     def set_valve(self, valve):
 
@@ -101,25 +101,19 @@ class _Arduino(Arduino):
                 self.pin_obj_write(
                     self.slv_pin_list[i], _Arduino.solvent_dict[valve][i])
 
+        time.sleep(0.5)
+
     def test(self):
         for i in range(len(self.pin_list)):
             self.pin_obj_write(self.pin_list[i], 1)
 
 
-myArduino = _Arduino('COM8')
-time.sleep(1)
-myArduino.set_valve('waste')
-time.sleep(1)
-myArduino.set_valve('aq')
-time.sleep(1)
-myArduino.set_valve('org')
-time.sleep(1)
-myArduino.set_valve('rct')
-time.sleep(1)
-myArduino.set_valve('phase')
-time.sleep(1)
-myArduino.set_valve('SM4')
-time.sleep(1)
-
-
-print('Done')
+# myArduino = _Arduino('COM7')
+# outlets = ['waste', 'aq', 'org', 'rct', 'phase',
+#            'sm1', 'sm2', 'sm3', 'sm4', 'naoh', 'hcl']
+# for o in outlets:
+#     start = time.time()
+#     myArduino.set_valve(o)
+#     end = time.time()
+#     print(f'{o} accessed in {end - start}sec.')
+#     time.sleep(0.2)

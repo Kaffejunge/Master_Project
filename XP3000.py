@@ -1,4 +1,6 @@
 import serial
+import time
+from multiprocessing import Process
 
 
 class XP3000:
@@ -17,7 +19,7 @@ class XP3000:
             port=self._port, baudrate=self._baudrate, timeout=5)
 
         # open the connection
-        if(ser.isOpen()):
+        if(self.ser.isOpen()):
             self.ser.close()
         self.ser.open()
         self.ser.reset_input_buffer()
@@ -25,15 +27,11 @@ class XP3000:
         # initializing the pump
         self.ser.write(b'/1ZR'+XP3000.term_char)
         print(f'Opened successful connection to XP3000 at port: {self._port}')
+        time.sleep(5)
 
     def flush_buffers(self):
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
-        # or
-        ser.flushInput()
-        ser.flushOutput()
-        # or
-        ser.flush()
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
 
     def report(self):
         self.ser.write(b'/1?R' + XP3000.term_char)
@@ -71,39 +69,66 @@ class XP3000:
     def wait_for_ready(self):
         # ser.in_waiting() / ser.out_waiting() checks how many bytes at port
         # !check if ser.read_until("'", size=?) works.
+        self.flush_buffers()
         string_to_send = b'/1QR' + XP3000.term_char
-        self.ser.write(string_to_send)
-        response = self.ser.readline()
-        # !check what the pump returns in python and adjust if statement
-        while(response != ''):
-            # wait 100 ms
-            time.sleep(0.1)
+        ready = False
+        while(not ready):
             self.ser.write(string_to_send)
+            time.sleep(1)
             response = self.ser.readline()
+            ready = "`" in str(response)
+            # print(response, ready)
 
-    def set_syr_vol(self, mL):
+    def get_syr_vol(self, mL, pos, speed=16):
         # set plunger so syringe contains mL
         muL = int(mL * 1000)
         self.plunger_pos = str(int(muL * (3000/5000))).encode()
-        string_to_send = b'/1A' + self.plunger_pos + b'R' + XP3000.term_char
+        solvents = ['acetone', 'h2o', 'rct_slv', 'wash_slv']
+        if(pos in solvents):
+            string_to_send = b'/1S' + \
+                str(speed).encode() + b'IA' + \
+                self.plunger_pos + b'R' + XP3000.term_char
+        else:
+            string_to_send = b'/1S' + \
+                str(speed).encode() + b'OA' + \
+                self.plunger_pos + b'R' + XP3000.term_char
+        # print(string_to_send)
         self.ser.write(string_to_send)
-        wait_for_ready()
+        time.sleep(1)
 
-    def empty_syr(self):
-        string_to_send = b'/1A0R' + XP3000.term_char
+        self.wait_for_ready()
+
+    def empty_syr(self, speed=14):
+
+        string_to_send = b'/1OS' + \
+            str(speed).encode() + b'A0R' + XP3000.term_char
         self.ser.write(string_to_send)
-        self.plunger_pos = 0
-        wait_for_ready()
+        # self.plunger_pos = 0
+
+        self.wait_for_ready()
 
     def terminate_movement(self):
         self.ser.write(b'/1T' + XP3000.term_char)
         self.ser.write(b'/1?R' + XP3000.term_char)
-        self.plunger_pos = self.ser.readline()
+        # time.sleep(0.5)
+        # self.plunger_pos = self.ser.readline() Needs to be parsed
+        self.wait_for_ready()
+
+    def send_string(self, string_to_send):
+        string_to_send = string_to_send.encode() + XP3000.term_char
+        self.ser.write(string_to_send)
+        time.sleep(0.5)
+
+    def read_line(self):
+        print(self.ser.readline())
+
+    def set_speed(self, speed):
+        # enter number between 1-40 (1 = fastes)
+        string_to_send = b'/1S' + str(speed).encode() + b'R' + XP3000.term_char
+        self.ser.write(string_to_send)
+        self.wait_for_ready()
+        print(f'Speed was set to {speed}.')
 
     def close(self):
         self.ser.close()
         print(f'Closed the connection to XP3000 at port: {self._port}')
-
-
-pump = XP3000('COM30')
-pump.close()

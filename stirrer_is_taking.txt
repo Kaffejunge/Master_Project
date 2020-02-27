@@ -1,0 +1,10 @@
+answer to write TP1?: b'TP1?\n'. unparsed line: b'TP1=029,5\r\n'
+Wanted temp: 26C	Current temp: 029,5C
+
+answer to write TP1?: b'TP1?\n'. unparsed line: b'TP1=029,8\r\n'
+Wanted temp: 26C	Current temp: 029,8C
+
+answer to write TP1?: b'TP1?\n'. unparsed line: b'TP1=029,9\r\n'
+Wanted temp: 26C	Current temp: 029,9C
+
+answer to write TP1?: b'Opimierungsphase BEGINN\r\n'. unparsed line: b'gTP1?\n'
