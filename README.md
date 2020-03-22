@@ -3,11 +3,11 @@ Python script to control various mashines to create an automated synthesis of ba
 
 install_from_script.py installs the needed modules that are not preinstalled with python (pyserial, pyfirmata, selenium).
 
-Synthesis.py runs the synthesis. Takes a single csv file in __main__
+Synthesis.py runs the synthesis. Takes a single csv file in __main__.
 
-XP3000.py module for a Cavro XP3000
+XP3000.py module for a Cavro XP3000.
 
-Stirrer.py module for a Heidolph MR3004
+Stirrer.py module for a Heidolph MR3004.
  
 Arduino.py module for Knauer solvent switcher with A037 valve drive. Also features basic reading functions.
 
