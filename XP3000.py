@@ -1,6 +1,5 @@
 import serial
 import time
-from multiprocessing import Process
 
 
 class XP3000:
@@ -26,8 +25,11 @@ class XP3000:
 
         # initializing the pump
         self.ser.write(b'/1ZR'+XP3000.term_char)
+        self.wait_for_ready()
         print(f'Opened successful connection to XP3000 at port: {self._port}')
-        time.sleep(5)
+
+    def is_open(self):
+        return self.ser.isOpen()
 
     def flush_buffers(self):
         self.ser.reset_input_buffer()
@@ -80,7 +82,7 @@ class XP3000:
             # print(response, ready)
 
     def get_syr_vol(self, mL, pos, speed=16):
-        # set plunger so syringe contains mL
+        # set plunger so syringe to contain set numer of mL
         muL = int(mL * 1000)
         self.plunger_pos = str(int(muL * (3000/5000))).encode()
         solvents = ['acetone', 'h2o', 'rct_slv', 'wash_slv']
@@ -92,32 +94,28 @@ class XP3000:
             string_to_send = b'/1S' + \
                 str(speed).encode() + b'OA' + \
                 self.plunger_pos + b'R' + XP3000.term_char
-        # print(string_to_send)
+        # resulting string /1<speed><valve_position><set_plunger_pos>R
         self.ser.write(string_to_send)
         time.sleep(1)
 
         self.wait_for_ready()
 
     def empty_syr(self, speed=14):
-
         string_to_send = b'/1OS' + \
             str(speed).encode() + b'A0R' + XP3000.term_char
         self.ser.write(string_to_send)
-        # self.plunger_pos = 0
-
         self.wait_for_ready()
 
     def terminate_movement(self):
         self.ser.write(b'/1T' + XP3000.term_char)
         self.ser.write(b'/1?R' + XP3000.term_char)
-        # time.sleep(0.5)
-        # self.plunger_pos = self.ser.readline() Needs to be parsed
         self.wait_for_ready()
 
     def send_string(self, string_to_send):
         string_to_send = string_to_send.encode() + XP3000.term_char
         self.ser.write(string_to_send)
         time.sleep(0.5)
+        # !notice the lack of wait_for_ready()
 
     def read_line(self):
         print(self.ser.readline())
