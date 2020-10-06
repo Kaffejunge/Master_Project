@@ -1,5 +1,5 @@
 # Master_Project
-Python script to control various mashines to create an automated synthesis of basic chemical compounds.
+Python script to control various machines to create an automated synthesis of basic chemical compounds.
 
 install_from_script.py installs the needed modules that are not preinstalled with python (pyserial, pyfirmata, selenium).
 
